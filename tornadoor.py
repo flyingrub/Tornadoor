@@ -2,19 +2,24 @@
 
 import tornado.ioloop
 import tornado.websocket
+
 import string
 import random
+
 import RPi.GPIO as GPIO
 import time
 import os
 
-PIN_SECRET = '666'
+import hashlib
+import qrcode
+
+PIN_SECRET = '9999'
 CONNECTED_CLIENTS = []
 SECOND = 2.0
 IS_OPENING = False
 
 
-class EchoWebSocket(tornado.websocket.WebSocketHandler):
+class DoorWebSocket(tornado.websocket.WebSocketHandler):
 
     def openDoor(self):
         global IS_OPENING
@@ -71,23 +76,32 @@ class EchoWebSocket(tornado.websocket.WebSocketHandler):
         for c in CONNECTED_CLIENTS:
             c.write_message(msg)
 
-
 app = tornado.web.Application([
-    (r'/dooritos/', EchoWebSocket),
+    (r'/dooritos/', DoorWebSocket),
 ])
 
 if __name__ == "__main__":
     os.chdir("/root/tornadoor")
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(14, GPIO.OUT)
+    GPIO.output(14, True)
     app.listen(8888, "192.168.1.99", ssl_options={
-        "certfile": "keys/server.crt",
-        "keyfile": "keys/server.key",
+        "certfile": "server.crt",
+        "keyfile": "server.key",
     })
+
+    h = hashlib.sha1()
+    with open('server.crt', 'rb') as crt:
+        h.update(crt.read())
+    cert_hash = h.hexdigest()
+    print(cert_hash)
+    img = qrcode.make(cert_hash)
+    img.save("certify.png")
+
     try:
         tornado.ioloop.IOLoop.current().start()
     except KeyboardInterrupt:
-        print("Goodbye/!")
+        print("Goodbye!")
     finally:
         GPIO.output(14, True)
         GPIO.cleanup()
