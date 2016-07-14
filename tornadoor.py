@@ -56,7 +56,11 @@ class DoorWebSocket(tornado.websocket.WebSocketHandler):
         CONNECTED_CLIENTS.remove(self)
 
     def sendAlea(self):
-        self.cur_alea = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(10))
+        self.cur_alea = ''.join(
+                            random.SystemRandom().choice(
+                                string.ascii_uppercase + string.digits
+                            ) for _ in range(10)
+                        )
         self.write_message("alea " + self.cur_alea)
 
     def onOpenRequest(self, payload):
